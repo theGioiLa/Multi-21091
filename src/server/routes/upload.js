@@ -29,7 +29,7 @@ router.post('/', async (req, res) => {
                         transcodePath
                     }
                     storage.set(key, JSON.stringify(info))
-                })
+                }, filename)
             })
         } catch (err) {
             res.responseAPI(err)
@@ -43,12 +43,12 @@ router.post('/', async (req, res) => {
     req.pipe(busboy)
 })
 
-function transcode(src, dest, done) {
+function transcode(src, dest, done, filename) {
     console.log('Source: ', src)
     console.log('Dest: ', dest)
 
     const command = ffmpeg(src)
-        .audioCodec('aac')
+        .audioCodec('libopus')
         .audioBitrate(128)
         .videoBitrate('1000')
         // .outputOptions([
@@ -59,9 +59,11 @@ function transcode(src, dest, done) {
         //     '-hls_segment_filename ~/%03d.ts'
         // ])
         .outputOptions([
-            '-hls_time 10'
+            '-hls_time 10',
+          `-hls_segment_filename ${dest}/${filename}_%03d.ts`,
+          // '-hls_base_url http://localhost:8080/'
         ])
-        .output(path.join(dest, 'index.m3u8'))
+        .output(path.join(dest, filename+'.m3u8'))
         .on('progress', function (progress) {
             console.log('Processing: ' + progress.percent + '% done')
         })
