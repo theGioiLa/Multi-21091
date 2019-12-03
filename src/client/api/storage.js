@@ -1,7 +1,7 @@
 import request from './axios'
 
 // resource = audio / mv
-export {
+export default {
     list,                   // get all resources
     getPayload,             // get the stream of resource
     getMetadata,            // get metadata of resource
@@ -28,7 +28,7 @@ function list(type = 'all') {
     return request({
         url: '/list',
         method: 'get',
-        params: { type }
+        params: { type, name: 'Hlleo' }
     })
 }
 

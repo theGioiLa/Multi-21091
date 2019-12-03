@@ -8,7 +8,7 @@ const ffmpeg = require('fluent-ffmpeg')
 const router = new Router()
 const uploadDir = path.join(__dirname, '../storage')
 
-router.post('/', async (req, res) => {
+router.post('/', (req, res) => {
     const busboy = new Busboy({ headers: req.headers })
     busboy.on('file', function (fieldName, file, filename, encoding, mimetype) {
         let dir = path.join(uploadDir, filename)
@@ -19,25 +19,22 @@ router.post('/', async (req, res) => {
             file.pipe(dest)
 
             dest.on('finish', () => {
-                let { base, dir } = path.parse(dest.path)
+                let { base, dir, ext } = path.parse(dest.path)
                 let transcodePath = path.join(dir, 'hls')
                 mkdirp.sync(transcodePath)
-                transcode(dest.path, transcodePath, () => {
+                transcode(dest.path, transcodePath, async () => {
                     let key = base
                     let info = {
                         originalPath: dest.path,
                         transcodePath
                     }
-                    storage.set(key, JSON.stringify(info))
+                    await storage.set(key, ext, JSON.stringify(info))
+                    res.responseAPI(Promise.resolve(''))
                 })
             })
         } catch (err) {
             res.responseAPI(err)
         }
-    })
-
-    busboy.on('finish', function () {
-        res.responseAPI(Promise.resolve(''))
     })
 
     req.pipe(busboy)
