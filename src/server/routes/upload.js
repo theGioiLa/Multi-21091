@@ -21,7 +21,9 @@ router.post('/', async (req, res) => {
             dest.on('finish', () => {
                 let dir = path.parse(dest.path).dir
                 let transcodePath = path.join(dir, 'hls')
-                transcode(dest.path, transcodePath)
+                transcode(dest.path, transcodePath, () => {
+                    
+                })
             })
         } catch (err) {
             res.responseAPI(err)
@@ -35,7 +37,7 @@ router.post('/', async (req, res) => {
     req.pipe(busboy)
 })
 
-function transcode(src, dest) {
+function transcode(src, dest, done) {
     console.log('Source: ', src)
     console.log('Dest: ', dest)
 }
