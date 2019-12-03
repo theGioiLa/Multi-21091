@@ -4,7 +4,7 @@ const mkdirp = require('mkdirp')
 const path = require('path')
 const fs = require('fs')
 const { storage } = require('../models')
-
+const ffmpeg = require('fluent-ffmpeg')
 const router = new Router()
 const uploadDir = path.join(__dirname, '../storage')
 
@@ -40,6 +40,29 @@ router.post('/', async (req, res) => {
 function transcode(src, dest, done) {
     console.log('Source: ', src)
     console.log('Dest: ', dest)
+
+    const command = ffmpeg(src)
+    .audioCodec('aac')
+    .audioBitrate(128)
+    .videoBitrate('1000')
+    // .outputOptions([
+    //     '-codec: copy',
+    //     '-hls_time 10',
+    //     '-hls_playlist_type vod',
+    //     '-hls_base_url http://localhost:8080/',
+    //     '-hls_segment_filename ~/%03d.ts'
+    // ])
+     .outputOptions([
+        'hls_time 10'
+    ])
+    .output(dest)
+    .on('progress', function(progress) {
+        console.log('Processing: ' + progress.percent + '% done')
+    })
+    .on('end', function(err, stdout, stderr) {
+        console.log('Finished processing!' /*, err, stdout, stderr*/)
+    })
+    .run() 
 }
 
 module.exports = router
