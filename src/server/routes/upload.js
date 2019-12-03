@@ -22,7 +22,6 @@ router.post('/', async (req, res) => {
                 let dir = path.parse(dest.path).dir
                 let transcodePath = path.join(dir, 'hls')
                 transcode(dest.path, transcodePath, () => {
-                    
                 })
             })
         } catch (err) {
@@ -53,16 +52,17 @@ function transcode(src, dest, done) {
     //     '-hls_segment_filename ~/%03d.ts'
     // ])
      .outputOptions([
-        'hls_time 10'
+        '-hls_time 10'
     ])
-    .output(dest)
+    .output(path.join(dest, 'index.m3u8'))
     .on('progress', function(progress) {
         console.log('Processing: ' + progress.percent + '% done')
     })
     .on('end', function(err, stdout, stderr) {
+        done()
         console.log('Finished processing!' /*, err, stdout, stderr*/)
     })
-    .run() 
+    .run()
 }
 
 module.exports = router
