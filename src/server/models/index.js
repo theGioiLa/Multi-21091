@@ -1,3 +1,3 @@
 const storage = require('./storage')
 
-export { storage }
+module.exports = { storage }
