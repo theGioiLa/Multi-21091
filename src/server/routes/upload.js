@@ -11,10 +11,11 @@ const uploadDir = path.join(__dirname, '../storage')
 router.post('/', (req, res) => {
     const busboy = new Busboy({ headers: req.headers })
     busboy.on('file', function (fieldName, file, filename, encoding, mimetype) {
-        let dir = path.join(uploadDir, filename)
+        let _filename = filename.replace(' ', '_')
+        let dir = path.join(uploadDir, _filename)
         try {
             mkdirp.sync(dir)
-            let destPath = path.join(dir, filename)
+            let destPath = path.join(dir, _filename)
             let dest = fs.createWriteStream(destPath)
             file.pipe(dest)
 
