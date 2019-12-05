@@ -3,6 +3,7 @@ const Busboy = require('busboy')
 const mkdirp = require('mkdirp')
 const path = require('path')
 const fs = require('fs')
+const utils = require('../utils')
 const { storage } = require('../models')
 const ffmpeg = require('fluent-ffmpeg')
 const router = new Router()
@@ -11,28 +12,51 @@ const uploadDir = path.join(__dirname, '../storage')
 router.post('/', (req, res) => {
     const busboy = new Busboy({ headers: req.headers })
     busboy.on('file', function (fieldName, file, filename, encoding, mimetype) {
-        let _filename = filename.replace(' ', '_')
-        let dir = path.join(uploadDir, _filename)
+        let ext = path.extname(filename)
+        let type = utils.getType(ext)
         try {
-            mkdirp.sync(dir)
-            let destPath = path.join(dir, _filename)
-            let dest = fs.createWriteStream(destPath)
-            file.pipe(dest)
-
-            dest.on('finish', () => {
-                let { base, dir, ext } = path.parse(dest.path)
-                let transcodePath = path.join(dir, 'hls')
-                mkdirp.sync(transcodePath)
-                transcode(dest.path, transcodePath, async () => {
+            let destPath = path.join(uploadDir, filename)
+            if (type == 'audio') {
+                let dest = fs.createWriteStream(destPath)
+                file.pipe(dest)
+                dest.on('finish', async () => {
+                    let { base, dir, ext } = path.parse(dest.path)
                     let key = base
                     let info = {
-                        originalPath: dest.path,
-                        transcodePath
+                        title: base,
+                        mimetype,
+                        size: dest.bytesWritten,
+                        path: dest.path,
                     }
                     await storage.set(key, ext, JSON.stringify(info))
                     res.responseAPI(Promise.resolve(''))
                 })
-            })
+
+            } else if (type == 'mv') {
+                let dir = destPath
+                mkdirp.sync(dir)
+                destPath = path.join(dir, filename)
+                let dest = fs.createWriteStream(destPath)
+                file.pipe(dest)
+
+                dest.on('finish', () => {
+                    let { base, dir, ext } = path.parse(dest.path)
+                    let transcodePath = path.join(dir, 'hls')
+                    mkdirp.sync(transcodePath)
+                    transcode(dest.path, transcodePath, async () => {
+                        let key = base
+                        let info = {
+                            title: base,
+                            originalPath: dest.path,
+                            transcodePath,
+                            mimetype,
+                            size: dest.bytesWritten,
+                        }
+                        await storage.set(key, ext, JSON.stringify(info))
+                        res.responseAPI(Promise.resolve(''))
+                    })
+                })
+            }
         } catch (err) {
             res.responseAPI(err)
         }
@@ -49,23 +73,17 @@ function transcode(src, dest, done) {
         .audioCodec('aac')
         .audioBitrate(128)
         .videoBitrate('1000')
-        // .outputOptions([
-        //     '-codec: copy',
-        //     '-hls_time 10',
-        //     '-hls_playlist_type vod',
-        //     '-hls_base_url http://localhost:8080/',
-        //     '-hls_segment_filename ~/%03d.ts'
-        // ])
         .outputOptions([
-            '-hls_time 10'
+            '-hls_time 10',
+            '-hls_playlist_type vod'
         ])
         .output(path.join(dest, 'index.m3u8'))
         .on('progress', function (progress) {
-            console.log('Processing: ' + progress.percent + '% done')
+            // console.log('Processing: ' + progress.percent + '% done')
         })
         .on('end', function (err, stdout, stderr) {
             done()
-            console.log('Finished processing!' /*, err, stdout, stderr*/)
+            // console.log('Finished processing!' /*, err, stdout, stderr*/)
         })
         .run()
 }

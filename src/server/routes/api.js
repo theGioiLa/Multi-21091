@@ -1,44 +1,66 @@
 const { Router } = require('express')
-const fs = require('fs')
+const utils = require('../utils')
 const path = require('path')
 const { storage } = require('../models')
 
 const router = new Router()
 
-router.get('/payload', async (req, res) => {
-    console.log(req.query)
+router.get('/list', async (req, res) => {
+    const { type } = req.query
+    let data = await storage.getAll(type)
+    let videos = data.videos.map(video => {
+        return {
+            title: video.title,
+            description: `Mimetype: ${video.mimetype}, Size: ${video.size}`
+        }
+    })
+
+    let audios = data.audios.map(audio => {
+        return {
+            title: audio.title,
+            description: `Mimetype: ${audio.mimetype}, Size: ${audio.size}`
+        }
+    })
+    res.responseAPI(Promise.resolve({ videos, audios }))
 })
 
-router.get('/metadata/', async (req, res) => {
-    console.log(req.query)
-})
-
-router.get('/list', (req, res) => {
-    const { type = 'all' } = req.query
-    let data
-    if (type == 'all') data = storage.getAll()
-    if (type == 'mv') data = storage.getAudios()
-    if (type == 'audio') data = storage.getMVs()
-
-    res.responseAPI(data)
-})
-
-router.get('/hls/vod/:streamKey', async (req, res) => {
-    const {streamKey} = req.params
+router.get('/stream/:streamKey', async (req, res) => {
     try {
-        let _streamKey = streamKey.replace(' ', '_')
-        let ext = path.extname(_streamKey)
-        let resource = await storage.get(_streamKey, ext)
+        const { type } = req.query
+        let streamKey = decodeURI(req.params.streamKey)
+        let ext = path.extname(streamKey)
+        let resource = await storage.get(streamKey, ext)
         if (resource) {
-            let hlsPath = path.join(resource.transcodePath, 'index.m3u8')
-            let data = fs.readFileSync(hlsPath)
-            return res.responseAPI(Promise.resolve(data))
+            let hostname = req.hostname == process.env.HOST ? `${req.hostname}:${process.env.PORT}` : req.hostname
+            let url = `${req.protocol}://${hostname}${req.baseUrl}`
+            if (type == 'mv') {
+                let encodedPath = utils.encrypt(resource.transcodePath)
+                url += `/mv/${encodedPath}/index.m3u8`
+            } else if (type == 'audio') {
+                let encodedPath = utils.encrypt(resource.path)
+                url += `/audio/${encodedPath}`
+            }
+            return res.responseAPI(Promise.resolve({ url, mimetype: resource.mimetype }))
         }
 
         throw new Error('Not found')
     } catch (err) {
         res.responseAPI(err)
     }
+})
+
+router.get('/audio/:encodedPath', (req, res) => {
+    const path2File = utils.decrypt(req.params.encodedPath)
+    res.sendFile(path2File)
+})
+
+router.get('/mv/:encodedHlsURL/:segment', (req, res) => {
+    const { encodedHlsURL, segment } = req.params
+    let hlsPath = utils.decrypt(encodedHlsURL)
+    let segmentPath = path.join(hlsPath, segment)
+    res.sendFile(segmentPath, err => {
+        if (err) console.error(err.message)
+    })
 })
 
 module.exports = router

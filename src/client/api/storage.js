@@ -3,32 +3,23 @@ import request from './axios'
 // resource = audio / mv
 export default {
     list,                   // get all resources
-    getPayload,             // get the stream of resource
-    getMetadata,            // get metadata of resource
+    getStream,             // get the stream of resource
     upload                  // upload resource
 }
 
-function getPayload(params) {
+function getStream(title, type) {
     return request({
-        url: '/payload',
+        url: `/stream/${title}`,
         method: 'get',
-        params
+        params: { type }
     })
 }
 
-function getMetadata(params) {
-    return request({
-        url: '/metadata',
-        method: 'get',
-        params
-    })
-}
-
-function list(type = 'all') {
+function list(type = '') {
     return request({
         url: '/list',
         method: 'get',
-        params: { type, name: 'Hlleo' }
+        params: { type }
     })
 }
 

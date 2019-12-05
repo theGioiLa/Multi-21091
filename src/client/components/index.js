@@ -1,5 +1,6 @@
 import SiteWrapper from './SiteWrapper'
+import Player from './Player'
 
 export {
-    SiteWrapper
+    SiteWrapper, Player
 }

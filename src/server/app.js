@@ -5,10 +5,10 @@ const cookieParser = require('cookie-parser')
 const compression = require('compression')
 const cors = require('cors')
 const routes = require('./routes')
+const env = require('dotenv').config({ path: path.join(__dirname, '.env') })
 // const passport = require('./passport')
 
 const app = express();
-
 
 app.use(compression());
 app.use(cors());
