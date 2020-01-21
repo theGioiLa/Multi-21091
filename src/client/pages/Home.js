@@ -5,6 +5,10 @@ import { Player } from '../components'
 import * as action from '../redux/action';
 
 class HomePage extends PureComponent {
+    constructor(props) {
+        super(props)
+        this.state = { isTest: false }
+    }
 
     componentDidMount() {
         this.props.list()
@@ -26,6 +30,11 @@ class HomePage extends PureComponent {
         this.props.getStream(title, type)
     }
 
+
+    onTest = () => {
+        this.setState(prevState => { return { isTest: !prevState.isTest } })
+    }
+
     render() {
         const { storage } = this.props
         const { list = {}, stream } = storage
@@ -33,6 +42,7 @@ class HomePage extends PureComponent {
         }
         return (
             <React.Fragment>
+                <Button onClick={this.onTest}>Test</Button>
                 <Upload
                     name='file'
                     accept="audio/*, video/*"
@@ -45,7 +55,7 @@ class HomePage extends PureComponent {
                 </Upload>
                 <Divider />
                 <Row gutter={16}>
-                    <Col span={8}>
+                    <Col span={4}>
                         <List
                             size="small"
                             header={<div>Video</div>}
@@ -81,20 +91,25 @@ class HomePage extends PureComponent {
                             )}
                         />
                     </Col>
-                    <Col span={16} style={{ alignContent: 'center' }}>
+                    <Col span={20} style={{ alignContent: 'center' }}>
                         {
                             stream && stream.type == 'audio' ?
                                 <video controls autoPlay name="media"><source src={stream.info.url} /></video>
                                 : null
                         }
 
-                        {
+                        {/* {
                             stream && stream.type == 'mv' ?
                                 <Player
-                                    autoPlay={true}
-                                    controls={true}
-                                    sources={[{ src: stream.info.url }]}
-                                    fluid={true}
+                                    debug={true}
+                                />
+                                : null
+                        } */}
+                        {
+                            this.state.isTest ?
+                                <Player
+                                    // src="https://s3.amazonaws.com/demos.transloadit.com/hlsdemo/my_playlist.m3u8"
+                                    src="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
                                 />
                                 : null
                         }

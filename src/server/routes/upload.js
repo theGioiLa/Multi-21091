@@ -70,11 +70,14 @@ function transcode(src, dest, done) {
     console.log('Dest: ', dest)
 
     const command = ffmpeg(src)
+        .videoCodec('libx264')
         .audioCodec('aac')
         .audioBitrate(128)
-        .videoBitrate('1000')
+        .videoBitrate('800k')
         .outputOptions([
-            '-hls_time 10',
+            '-hls_time 2',
+            '-r 25',
+            '-g 50',
             '-hls_playlist_type vod'
         ])
         .output(path.join(dest, 'index.m3u8'))
