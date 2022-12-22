@@ -22,7 +22,7 @@
     "fluent-ffmpeg": "^2.1.2",
     "hls.js": "^0.12.3-canary.4467",
     "ioredis": "^4.9.0",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "mkdirp": "^0.5.1",
     "multiparty": "^4.2.1",
     "passport": "^0.4.0",
